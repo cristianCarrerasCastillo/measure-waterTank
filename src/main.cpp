@@ -21,7 +21,6 @@ class LedStrip {
     uint8_t pin;
     uint8_t intensity;
 };
-
 LedStrip red(5, 200); // gpio 5 (D1), 200 intensity
 LedStrip yellow(4, 200); // gpio 4 (D2), 200 intensity
 LedStrip green(0, 200); // gpio 0 (D3), 200 intensity [warning: D3 is used for serial communication, so don't connect anything to it while programming]!
@@ -29,7 +28,6 @@ LedStrip green(0, 200); // gpio 0 (D3), 200 intensity [warning: D3 is used for s
 void setup() {
   Serial.begin(9600);
 }
-
 
 void lowWater() {
   red.on();
@@ -56,12 +54,14 @@ void error() {
 }
 
 void loop() {
+  int distance = 0;
+  distance = pingPing.read();
   Serial.print("Distancia: ");
-  Serial.print(pingPing.read());
+  Serial.print(distance);
   Serial.println(" cm");
-  delay(1000);
+  
 
-  switch (pingPing.read())
+  switch (distance)
   {
   case 0 ... 55:
     highWater();
@@ -76,4 +76,5 @@ void loop() {
     error();
     break;
   }
+  delay(5000);
 }
