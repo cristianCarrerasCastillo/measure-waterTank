@@ -80,8 +80,10 @@ void warning(){
 void loop() {
   int distance = 0;
   distance = pingPing.read();
-  Serial.print("Distancia: ");
-  Serial.print(distance);
+
+  // corrección para leer de forma más simple el agua restante
+  Serial.print("Agua restante: ");
+  Serial.print(150 - distance);
   Serial.println(" cm");
   
   switch (distance)
