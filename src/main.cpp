@@ -7,10 +7,16 @@
 #include <Arduino.h>
 #include <Ultrasonic.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #include <time.h>
 #include <env.h>
 
 Ultrasonic pingPing(16); // gpio 16 (D0) 
+
+ESP8266WebServer server(80);
+
+String waterLevel = "-1";
+String msg = "";
 
 class LedStrip {
   public:
@@ -56,6 +62,49 @@ void setup() {
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
   Serial.println(asctime(&timeinfo));
+
+  // create a web server
+  // endpoints to get the water level and a message
+  server.on("/data", HTTP_GET, []() {
+  String data = "{ \"waterLevel\": \"" + waterLevel + "\", \"msg\": \"" + msg + "\" }";
+  server.send(200, "application/json", data);
+  });
+
+  // page to show the water level and a message
+  server.on("/", HTTP_GET, []() {
+  String html = R"(
+    <html>
+    <body>
+      <h1>Water level</h1>
+      <p>El nivel de agua es: <span id="waterLevel">Cargando nivel de agua...</span> cm</p>
+      <h2>Mensaje</h2>
+      <p>mensaje: <span id="msg">Cargando mensaje...</span></p>
+      <script>
+        function getData() {
+          fetch('/data')
+            .then(response => response.json())
+            .then(data => {
+              document.getElementById('waterLevel').textContent = data.waterLevel;
+              document.getElementById('msg').textContent = data.msg;
+            });
+        }
+        // Solicita los datos cada 5 segundos
+        setInterval(getData, 5000);
+        // Solicita los datos inmediatamente al cargar la página
+        getData();
+      </script>
+    </body>
+    </html>
+  )";
+  server.send(200, "text/html", html);
+  });
+
+  // start the server
+  server.begin();
+  Serial.println("Server started");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
 }
 
 void lowWater() {
@@ -63,6 +112,7 @@ void lowWater() {
   red.on();
   yellow.off();
   green.off();
+  msg = "El agua esta baja, por favor rellenar";
 }
 
 void mediumWater() {
@@ -70,6 +120,7 @@ void mediumWater() {
   red.on();
   yellow.on();
   green.off();
+  msg = "El agua esta a la mitad, por favor rellenar";
 }
 
 void highWater() {
@@ -77,6 +128,7 @@ void highWater() {
   red.on();
   yellow.on();
   green.on();
+  msg = "El agua esta llena, no es necesario rellenar";
 }
 
 void error() {
@@ -84,6 +136,7 @@ void error() {
   red.on();
   yellow.off();
   green.on();
+  msg = "Error al leer el nivel de agua";
 }
 
 void warning(){
@@ -98,6 +151,7 @@ void warning(){
     green.off();
     delay(100);
   }
+  msg = "Cuidado!!, el agua esta llegando al sensor";
 }
 
 void off(){
@@ -109,15 +163,19 @@ void off(){
 
 void loop() {
 
+  server.handleClient();
+
   time_t now = time(nullptr);
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
   Serial.println(asctime(&timeinfo));
+  waterLevel = "No es horario habil para hacer lecturas de nivel, horario de 8:00 a 19:00";
   if (timeinfo.tm_hour >= 8 || timeinfo.tm_hour < 19) {
     Serial.println("Encendiendo led, Buenos dias");
 
     int distance = 0;
     distance = pingPing.read();
+    waterLevel = String(150 - distance);
   
   // corrección para leer de forma más simple el agua restante
   Serial.print("Agua restante: ");
