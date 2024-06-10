@@ -112,7 +112,7 @@ void lowWater() {
   red.on();
   yellow.off();
   green.off();
-  msg = "El agua esta baja, por favor rellenar";
+  msg = "El nivel de agua esta bajo, por favor rellenar";
 }
 
 void mediumWater() {
@@ -120,7 +120,7 @@ void mediumWater() {
   red.on();
   yellow.on();
   green.off();
-  msg = "El agua esta a la mitad, por favor rellenar";
+  msg = "El nivel de agua esta a la mitad, por favor rellenar";
 }
 
 void highWater() {
@@ -128,7 +128,7 @@ void highWater() {
   red.on();
   yellow.on();
   green.on();
-  msg = "El agua esta llena, no es necesario rellenar";
+  msg = "El nivel de agua esta llena, no es necesario rellenar";
 }
 
 void error() {
@@ -151,7 +151,7 @@ void warning(){
     green.off();
     delay(100);
   }
-  msg = "Cuidado!!, el agua esta llegando al sensor";
+  msg = "Cuidado!!, el nivel del agua esta llegando al sensor";
 }
 
 void off(){
@@ -159,6 +159,7 @@ void off(){
   red.off();
   yellow.off();
   green.off();
+  msg = "Leds apagados, no es horario habil para hacer lecturas de nivel";
 }
 
 void loop() {
