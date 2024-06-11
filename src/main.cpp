@@ -10,13 +10,15 @@
 #include <ESP8266WebServer.h>
 #include <time.h>
 #include <env.h>
+#include <html/html.h>
 
 Ultrasonic pingPing(16); // gpio 16 (D0) 
 
 ESP8266WebServer server(80);
 
-String waterLevel = "-1";
-String msg = "";
+String waterLevel = "Sin datos aun...";
+String msg = "Iniciando Equipo...";
+String timeStamp = "Recibiendo hora...";
 
 class LedStrip {
   public:
@@ -50,7 +52,7 @@ void setup() {
   }
   Serial.println("Connected to the WiFi network");
 
-  configTime(-4, 0, "ntp.shoa.cl");
+  configTime(-3, 0, "ntp.shoa.cl");
 
   time_t now = time(nullptr);
   while (now < 24 * 3600) {
@@ -61,42 +63,18 @@ void setup() {
   Serial.println("Time set!");
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  Serial.println(asctime(&timeinfo));
+  Serial.print(asctime(&timeinfo));
 
   // create a web server
   // endpoints to get the water level and a message
+
   server.on("/data", HTTP_GET, []() {
-  String data = "{ \"waterLevel\": \"" + waterLevel + "\", \"msg\": \"" + msg + "\" }";
-  server.send(200, "application/json", data);
+    server.send(200, "application/json", setJsonData::data(waterLevel, msg, timeStamp));
   });
 
-  // page to show the water level and a message
+  // page to show the water level and a message 
   server.on("/", HTTP_GET, []() {
-  String html = R"(
-    <html>
-    <body>
-      <h1>Water level</h1>
-      <p>El nivel de agua es: <span id="waterLevel">Cargando nivel de agua...</span> cm</p>
-      <h2>Mensaje</h2>
-      <p>mensaje: <span id="msg">Cargando mensaje...</span></p>
-      <script>
-        function getData() {
-          fetch('/data')
-            .then(response => response.json())
-            .then(data => {
-              document.getElementById('waterLevel').textContent = data.waterLevel;
-              document.getElementById('msg').textContent = data.msg;
-            });
-        }
-        // Solicita los datos cada 5 segundos
-        setInterval(getData, 5000);
-        // Solicita los datos inmediatamente al cargar la página
-        getData();
-      </script>
-    </body>
-    </html>
-  )";
-  server.send(200, "text/html", html);
+    server.send(200, "text/html", setJsonData::page);
   });
 
   // start the server
@@ -132,7 +110,7 @@ void highWater() {
 }
 
 void error() {
-  Serial.println("Error");
+  Serial.println("Error al leer el nivel de agua");
   red.on();
   yellow.off();
   green.on();
@@ -140,7 +118,7 @@ void error() {
 }
 
 void warning(){
-  Serial.println("Cuidado!!, el agua esta llegando al sensor");
+  Serial.println("Cuidado!!, el nivel del agua esta llegando al sensor");
   red.on();
   yellow.on();
   size_t count = 3;
@@ -165,19 +143,22 @@ void off(){
 void loop() {
 
   server.handleClient();
+  int distance = 0;
+  distance = pingPing.read();
 
   time_t now = time(nullptr);
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  Serial.println(asctime(&timeinfo));
-  waterLevel = "No es horario habil para hacer lecturas de nivel, horario de 8:00 a 19:00";
-  if (timeinfo.tm_hour >= 8 || timeinfo.tm_hour < 19) {
+  char* timeStr = asctime(&timeinfo);
+  timeStr[strlen(timeStr) - 1] = '\0'; // Reemplaza el carácter de nueva línea con un carácter nulo
+  timeStamp = String(timeStr);
+  Serial.print(timeStamp);
+
+  waterLevel = String(150 - distance);
+
+  if (timeinfo.tm_hour >= 8 && timeinfo.tm_hour < 19) {
     Serial.println("Encendiendo led, Buenos dias");
 
-    int distance = 0;
-    distance = pingPing.read();
-    waterLevel = String(150 - distance);
-  
   // corrección para leer de forma más simple el agua restante
   Serial.print("Agua restante: ");
     Serial.print(150 - distance);
@@ -204,7 +185,8 @@ void loop() {
     delay(5000);
   } 
   else {
+    waterLevel = String(150 - distance);
     off();
-    delay(1000 * 60 * 60 * 1); // 1 hr
+    delay(5000);
   }
 }
