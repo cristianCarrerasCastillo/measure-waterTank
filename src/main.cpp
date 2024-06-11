@@ -19,6 +19,7 @@ ESP8266WebServer server(80);
 String waterLevel = "Sin datos aun...";
 String msg = "Iniciando Equipo...";
 String timeStamp = "Recibiendo hora...";
+String equipName = nameOfEsp; // nameOfEsp is defined in env.h
 
 class LedStrip {
   public:
@@ -69,7 +70,7 @@ void setup() {
   // endpoints to get the water level and a message
 
   server.on("/data", HTTP_GET, []() {
-    server.send(200, "application/json", setJsonData::data(waterLevel, msg, timeStamp));
+    server.send(200, "application/json", setJsonData::data(waterLevel, msg, timeStamp, equipName));
   });
 
   // page to show the water level and a message 
@@ -85,27 +86,34 @@ void setup() {
 
 }
 
-void lowWater() {
+void lowWater(bool bussinessHours) {
   Serial.println("Low water");
-  red.on();
-  yellow.off();
-  green.off();
+  if(bussinessHours){
+    red.on();
+    yellow.off();
+    green.off();
+  }
+  
   msg = "El nivel de agua esta bajo, por favor rellenar";
 }
 
-void mediumWater() {
+void mediumWater(bool bussinessHours) {
   Serial.println("Medium water");
-  red.on();
-  yellow.on();
-  green.off();
+  if(bussinessHours){
+    red.on();
+    yellow.on();
+    green.off();
+  }
   msg = "El nivel de agua esta a la mitad, por favor rellenar";
 }
 
-void highWater() {
+void highWater(bool bussinessHours) {
   Serial.println("High water");
-  red.on();
-  yellow.on();
-  green.on();
+  if(bussinessHours){
+    red.off();
+    yellow.on();
+    green.off();
+  }
   msg = "El nivel de agua esta llena, no es necesario rellenar";
 }
 
@@ -117,17 +125,19 @@ void error() {
   msg = "Error al leer el nivel de agua";
 }
 
-void warning(){
+void warning(bool bussinessHours){
   Serial.println("Cuidado!!, el nivel del agua esta llegando al sensor");
-  red.on();
-  yellow.on();
-  size_t count = 3;
-  for (size_t i = 0; i < count; i++)
-  {
-    green.on();
-    delay(100);
-    green.off();
-    delay(100);
+  if(bussinessHours){
+    red.on();
+    yellow.on();
+    size_t count = 3;
+    for (size_t i = 0; i < count; i++)
+    {
+      green.on();
+      delay(100);
+      green.off();
+      delay(100);
+    }
   }
   msg = "Cuidado!!, el nivel del agua esta llegando al sensor";
 }
@@ -137,7 +147,27 @@ void off(){
   red.off();
   yellow.off();
   green.off();
-  msg = "Leds apagados, no es horario habil para hacer lecturas de nivel";
+}
+
+void desitionCase(int dis, bool bussinessHours = true){
+  switch (dis)
+    {
+    case 0 ... 19:
+      warning(bussinessHours);
+      break;
+    case 20 ... 59:
+      highWater(bussinessHours);
+      break;
+    case 60 ... 119:
+      mediumWater(bussinessHours);
+      break;
+    case 120 ... 155:
+      lowWater(bussinessHours);
+      break;
+    default:
+      error();
+      break;
+  }
 }
 
 void loop() {
@@ -152,40 +182,24 @@ void loop() {
   char* timeStr = asctime(&timeinfo);
   timeStr[strlen(timeStr) - 1] = '\0'; // Reemplaza el carácter de nueva línea con un carácter nulo
   timeStamp = String(timeStr);
-  Serial.print(timeStamp);
+  Serial.println(timeStamp);
 
   waterLevel = String(150 - distance);
 
-  if (timeinfo.tm_hour >= 8 && timeinfo.tm_hour < 19) {
+  if (timeinfo.tm_hour >= 4 && timeinfo.tm_hour < 14) { // 4 am - 3 pm in utc time, this is 8 am - 18 pm in chilean time
     Serial.println("Encendiendo led, Buenos dias");
 
   // corrección para leer de forma más simple el agua restante
   Serial.print("Agua restante: ");
     Serial.print(150 - distance);
     Serial.println(" cm");
+    desitionCase(distance);
     
-    switch (distance)
-    {
-    case 0 ... 19:
-      warning();
-      break;
-    case 20 ... 59:
-      highWater();
-      break;
-    case 60 ... 119:
-      mediumWater();
-      break;
-    case 120 ... 155:
-      lowWater();
-      break;
-    default:
-      error();
-      break;
-  }
     delay(5000);
   } 
   else {
     waterLevel = String(150 - distance);
+    desitionCase(distance, false);
     off();
     delay(5000);
   }

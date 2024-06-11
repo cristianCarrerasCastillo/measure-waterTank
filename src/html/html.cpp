@@ -1,13 +1,14 @@
 #include "html.h"
 
-String setJsonData::data(const String& waterLevel, const String& msg, const String& timeStamp) {
-    return "{\"waterLevel\": \"" + waterLevel + "\", \"msg\": \"" + msg + "\", \"timeStamp\": \"" + timeStamp + "\"}";
+String setJsonData::data(const String& waterLevel, const String& msg, const String& timeStamp, const String& nameOfEsp) {
+    return "{ \"waterLevel\": \"" + waterLevel + "\", \"msg\": \"" + msg + "\", \"timeStamp\": \"" + timeStamp + "\", \"name device\": \"" + nameOfEsp + "\"}";
 }
 
 String setJsonData::page = R"(
     <html>
     <body>
       <h1>Water level</h1>
+      <p>Name of device: <span id="nameOfEsp">Cargando nombre...</span></p>
       <p>El nivel de agua es: <span id="waterLevel">Cargando nivel de agua...</span> cm</p>
       <h2>Mensaje</h2>
       <p><span id="msg">Cargando mensaje...</span></p>
@@ -20,6 +21,7 @@ String setJsonData::page = R"(
                 document.getElementById('waterLevel').textContent = data.waterLevel;
                 document.getElementById('msg').textContent = data.msg;
                 document.getElementById('timeStamp').textContent = data.timeStamp;
+                document.getElementById('nameOfEsp').textContent = data.name device;
             });
         }
         // Solicita los datos cada 5 segundos
