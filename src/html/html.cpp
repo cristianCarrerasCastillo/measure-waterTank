@@ -1,7 +1,7 @@
 #include "html.h"
 
-String setJsonData::data(const String& waterLevel, const String& msg, const String& timeStamp, const String& nameOfEsp) {
-    return "{ \"waterLevel\": \"" + waterLevel + "\", \"msg\": \"" + msg + "\", \"timeStamp\": \"" + timeStamp + "\", \"name device\": \"" + nameOfEsp + "\"}";
+String setJsonData::data(const String& waterLevel, const String& msg, const String& timeStamp, const String& nameOfEsp, const String& fwVersion) {
+    return "{ \"waterLevel\": \"" + waterLevel + "\", \"msg\": \"" + msg + "\", \"timeStamp\": \"" + timeStamp + "\", \"name_device\": \"" + nameOfEsp + "\", \"fwVersion\": \"" + fwVersion + "\"}";
 }
 
 String setJsonData::page = R"(
@@ -13,6 +13,9 @@ String setJsonData::page = R"(
       <h2>Mensaje</h2>
       <p><span id="msg">Cargando mensaje...</span></p>
       <p>timeStamp: <span id="timeStamp">Cargando hora...</span></p>
+      <br>
+      <hr>
+      <p>firmware Version: <span id="fwVersion">Cargando versión...</span></p>
       <script>
         function getData() {
           fetch('/data')
@@ -21,7 +24,8 @@ String setJsonData::page = R"(
                 document.getElementById('waterLevel').textContent = data.waterLevel;
                 document.getElementById('msg').textContent = data.msg;
                 document.getElementById('timeStamp').textContent = data.timeStamp;
-                document.getElementById('nameOfEsp').textContent = data.name device;
+                document.getElementById('nameOfEsp').textContent = data.name_device;
+                document.getElementById('fwVersion').textContent = data.fwVersion;
             });
         }
         // Solicita los datos cada 5 segundos

@@ -5,7 +5,7 @@
 
 class setJsonData {
     public:
-        static String data(const String& waterLevel, const String& msg, const String& timeStamp, const String& nameOfEsp);
+        static String data(const String& waterLevel, const String& msg, const String& timeStamp, const String& nameOfEsp, const String& fwVersion);
         static String page;
 };
 

@@ -12,6 +12,9 @@
 #include <env.h>
 #include <html/html.h>
 
+// firmware version
+const char* fwVersion = "1.0.0";
+
 Ultrasonic pingPing(16); // gpio 16 (D0) 
 
 ESP8266WebServer server(80);
@@ -70,7 +73,7 @@ void setup() {
   // endpoints to get the water level and a message
 
   server.on("/data", HTTP_GET, []() {
-    server.send(200, "application/json", setJsonData::data(waterLevel, msg, timeStamp, equipName));
+    server.send(200, "application/json", setJsonData::data(waterLevel, msg, timeStamp, equipName, fwVersion));
   });
 
   // page to show the water level and a message 
@@ -186,21 +189,14 @@ void loop() {
 
   waterLevel = String(150 - distance);
 
-  if (timeinfo.tm_hour >= 4 && timeinfo.tm_hour < 14) { // 4 am - 3 pm in utc time, this is 8 am - 18 pm in chilean time
-    Serial.println("Encendiendo led, Buenos dias");
+  Serial.println("Encendiendo led, Buenos dias");
 
   // corrección para leer de forma más simple el agua restante
   Serial.print("Agua restante: ");
-    Serial.print(150 - distance);
-    Serial.println(" cm");
-    desitionCase(distance);
-    
-    delay(5000);
-  } 
-  else {
-    waterLevel = String(150 - distance);
-    desitionCase(distance, false);
-    off();
-    delay(5000);
-  }
+  Serial.print(150 - distance);
+  Serial.println(" cm");
+  desitionCase(distance);
+  
+  delay(5000);
+
 }
